@@ -47,6 +47,9 @@ public:
     Q_PROPERTY(Fact*            amslAltAboveTerrain     READ amslAltAboveTerrain                                CONSTANT)                           ///< Actual AMSL altitude for item if altitudeMode == AltitudeAboveTerrain
     Q_PROPERTY(int              command                 READ command                WRITE setCommand            NOTIFY commandChanged)
     Q_PROPERTY(bool             supportsTerrainFrame    READ supportsTerrainFrame                               NOTIFY supportsTerrainFrameChanged)
+    Q_PROPERTY(double           circleRadius            READ circleRadius                                       NOTIFY circleRadiusChanged)
+    Q_PROPERTY(QColor           circleColor             READ circleColor                                        NOTIFY circleColorChanged)
+    Q_PROPERTY(int              circleWidth             READ circleWidth                                        NOTIFY circleWidthChanged)
 
     /// Optional sections
     Q_PROPERTY(QObject*         speedSection            READ speedSection                                       NOTIFY speedSectionChanged)
@@ -78,6 +81,10 @@ public:
 
     CameraSection*  cameraSection       (void) { return _cameraSection; }
     SpeedSection*   speedSection        (void) { return _speedSection; }
+
+    double          circleRadius        (void);
+    QColor          circleColor         (void) const    { return _circleColor; }
+    int             circleWidth         (void) const    { return _circleWidth; }
 
     QmlObjectListModel* textFieldFacts  (void) { return &_textFieldFacts; }
     QmlObjectListModel* nanFacts        (void) { return &_nanFacts; }
@@ -143,6 +150,9 @@ signals:
     void speedSectionChanged        (QObject* cameraSection);
     void altitudeModeChanged        (void);
     void supportsTerrainFrameChanged(void);
+    void circleRadiusChanged        (double circleRadius);
+    void circleColorChanged         (QColor circleColor);
+    void circleWidthChanged         (QColor circleWidth);
 
 private slots:
     void _setDirty                          (void);
@@ -202,6 +212,9 @@ private:
     FactMetaData    _param7MetaData;
 
     bool _syncingHeadingDegreesAndParam4;   ///< true: already in a sync signal, prevents signal loop
+
+    QColor      _circleColor;
+    int         _circleWidth;
 
     static const char* _jsonAltitudeModeKey;
     static const char* _jsonAltitudeKey;

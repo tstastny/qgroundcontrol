@@ -71,6 +71,8 @@ SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, bool flyView, QObject* pa
     , _param6MetaData                   (FactMetaData::valueTypeDouble)
     , _param7MetaData                   (FactMetaData::valueTypeDouble)
     , _syncingHeadingDegreesAndParam4   (false)
+    , _circleColor                      ("white")
+    , _circleWidth                      (1)
 {
     _editorQml = QStringLiteral("qrc:/qml/SimpleItemEditor.qml");
 
@@ -104,6 +106,8 @@ SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, bool flyView, const Missi
     , _param6MetaData           (FactMetaData::valueTypeDouble)
     , _param7MetaData           (FactMetaData::valueTypeDouble)
     , _syncingHeadingDegreesAndParam4           (false)
+    , _circleColor                      ("white")
+    , _circleWidth                      (1)
 {
     _editorQml = QStringLiteral("qrc:/qml/SimpleItemEditor.qml");
 
@@ -164,6 +168,8 @@ SimpleMissionItem::SimpleMissionItem(const SimpleMissionItem& other, bool flyVie
     , _param3MetaData           (FactMetaData::valueTypeDouble)
     , _param4MetaData           (FactMetaData::valueTypeDouble)
     , _syncingHeadingDegreesAndParam4           (false)
+    , _circleColor                      ("white")
+    , _circleWidth                      (1)
 {
     _editorQml = QStringLiteral("qrc:/qml/SimpleItemEditor.qml");
 
@@ -234,6 +240,11 @@ void SimpleMissionItem::_connectSignals(void)
 
     // Firmware type change can affect supportsTerrainFrame
     connect(_vehicle, &Vehicle::firmwareTypeChanged, this, &SimpleMissionItem::supportsTerrainFrameChanged);
+
+    // These signals require an update to the circle radius
+    connect(&_missionItem._param2Fact,  &Fact::valueChanged, this, &SimpleMissionItem::circleRadius);
+    connect(&_missionItem._param3Fact,  &Fact::valueChanged, this, &SimpleMissionItem::circleRadius);
+    connect(&_missionItem._commandFact, &Fact::valueChanged, this, &SimpleMissionItem::circleRadius);
 }
 
 void SimpleMissionItem::_setupMetaData(void)
@@ -998,4 +1009,34 @@ void SimpleMissionItem::_possibleAdditionalTimeDelayChanged(void)
     }
 
     return;
+}
+
+double SimpleMissionItem::circleRadius(void)
+{
+    double radius = 0.0;
+    int command = _missionItem._commandFact.cookedValue().toInt();
+
+    if (command == 16) {
+        radius = _missionItem.param2();
+        _circleColor = "#CCFFFFFF";
+        _circleWidth = 2;
+    } else if (command == 17) {
+        radius = _missionItem.param3();
+        _circleColor = "#CCFFFF00";
+        _circleWidth = 2;
+    } else if (command == 22) {
+        radius = _missionItem.param3();
+        _circleColor = "#CCFFFF00";
+        _circleWidth = 2;
+    } else if (command == 31) {
+        radius = _missionItem.param3();
+        _circleColor = "#CCa99eff";
+        _circleWidth = 2;
+    }
+
+    emit circleRadiusChanged(radius);
+    emit circleColorChanged(_circleColor);
+    emit circleWidthChanged(_circleWidth);
+
+    return radius;
 }
