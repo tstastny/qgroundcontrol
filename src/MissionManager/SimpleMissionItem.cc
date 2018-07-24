@@ -1017,19 +1017,19 @@ double SimpleMissionItem::circleRadius(void)
     int command = _missionItem._commandFact.cookedValue().toInt();
 
     if (command == 16) {
-        radius = _missionItem.param2();
+        radius = fabs(_missionItem.param2());
         _circleColor = "#CCFFFFFF";
         _circleWidth = 2;
     } else if (command == 17) {
-        radius = _missionItem.param3();
+        radius = fabs(_missionItem.param3());
         _circleColor = "#CCFFFF00";
         _circleWidth = 2;
     } else if (command == 22) {
-        radius = _missionItem.param3();
+        radius = fabs(_missionItem.param3());
         _circleColor = "#CCFFFF00";
         _circleWidth = 2;
     } else if (command == 31) {
-        radius = _missionItem.param3();
+        radius = fabs(_missionItem.param3());
         _circleColor = "#CCa99eff";
         _circleWidth = 2;
     }
