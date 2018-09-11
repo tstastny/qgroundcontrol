@@ -639,10 +639,10 @@ void QGCXPlaneLink::readBytes()
 
             if (p.index == 3)
             {
-                float knotsToMetersPerSecond = 0.514444f;
-                ind_airspeed = p.f[5] * knotsToMetersPerSecond;
-                true_airspeed = p.f[6] * knotsToMetersPerSecond;
-                groundspeed = p.f[7] * knotsToMetersPerSecond;
+                float milesPerHourToMetersPerSecond = 0.44704f;
+                ind_airspeed = p.f[5] * milesPerHourToMetersPerSecond;
+                true_airspeed = p.f[6] * milesPerHourToMetersPerSecond;
+                groundspeed = p.f[7] * milesPerHourToMetersPerSecond;
 
                 //qDebug() << "SPEEDS:" << "airspeed" << airspeed << "m/s, groundspeed" << groundspeed << "m/s";
             }
