@@ -679,6 +679,16 @@ void QGCXPlaneLink::readBytes()
 				fields_changed |= (1 << 0) | (1 << 1) | (1 << 2);
                 emitUpdate = true;
             }
+            if (p.index == 5)
+            {
+                float knotsToMetersPerSecond = 0.514444f;
+                wind_speed = p.f[3] * knotsToMetersPerSecond;
+                wind_dir = p.f[4] + 180.0f;
+                if (wind_dir > 360.0f) wind_dir = wind_dir - 360.0f;
+                if (wind_dir < 0.0f) wind_dir = wind_dir + 360.0f;
+
+                //qDebug() << "Wind sp.:" << wind_speed << "m/s, Wind dir.:" << wind_dir << "deg";
+            }
             // atmospheric pressure aircraft for XPlane 9 and 10
             else if (p.index == 6)
             {
@@ -913,7 +923,7 @@ void QGCXPlaneLink::readBytes()
         if (QGC::groundTimeMilliseconds() - simUpdateLastGroundTruth > 40) {
             emit hilGroundTruthChanged(QGC::groundTimeUsecs(), roll, pitch, yaw, rollspeed,
                                        pitchspeed, yawspeed, lat, lon, alt,
-                                       vx, vy, vz, ind_airspeed, true_airspeed, xacc, yacc, zacc);
+                                       vx, vy, vz, ind_airspeed, true_airspeed, wind_speed, wind_dir, xacc, yacc, zacc);
 
             simUpdateLastGroundTruth = QGC::groundTimeMilliseconds();
         }

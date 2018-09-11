@@ -231,7 +231,7 @@ public slots:
 
     void sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw, float rollRotationRate,
                         float pitchRotationRate, float yawRotationRate, double lat, double lon, double alt,
-                        float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float xacc, float yacc, float zacc);
+                        float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float xacc, float yacc, float zacc);
 
     /** @brief RAW sensors for sensor HIL */
     void sendHilSensors(quint64 time_us, float xacc, float yacc, float zacc, float rollspeed, float pitchspeed, float yawspeed,

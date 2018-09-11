@@ -214,6 +214,7 @@ protected:
     float ind_airspeed;
     float true_airspeed;
     float groundspeed;
+    float wind_speed, wind_dir;
     float xmag, ymag, zmag, abs_pressure, diff_pressure, pressure_alt, temperature;
     float barometerOffsetkPa;
 

@@ -1246,9 +1246,11 @@ void UAS::enableHilXPlane(bool enable)
 * @param lat Latitude, expressed as * 1E7
 * @param lon Longitude, expressed as * 1E7
 * @param alt Altitude in meters, expressed as * 1000 (millimeters)
-* @param vx Ground X Speed (Latitude), expressed as m/s * 100
-* @param vy Ground Y Speed (Longitude), expressed as m/s * 100
-* @param vz Ground Z Speed (Altitude), expressed as m/s * 100
+* @param vx Ground X Speed (Latitude), expressed as m/s
+* @param vy Ground Y Speed (Longitude), expressed as m/s
+* @param vz Ground Z Speed (Altitude), expressed as m/s
+* @param wind_speed Wind Speed (m/s)
+* @param wind_dir Wind Direction (deg), clockwise from north
 * @param xacc X acceleration (mg)
 * @param yacc Y acceleration (mg)
 * @param zacc Z acceleration (mg)
@@ -1256,7 +1258,7 @@ void UAS::enableHilXPlane(bool enable)
 #ifndef __mobile__
 void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw, float rollspeed,
                        float pitchspeed, float yawspeed, double lat, double lon, double alt,
-                       float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float xacc, float yacc, float zacc)
+                       float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float xacc, float yacc, float zacc)
 {
     Q_UNUSED(time_us);
     Q_UNUSED(xacc);
@@ -1276,12 +1278,15 @@ void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw
         emit valueChanged(uasId, "lon sim", "deg", lon*1e7, getUnixTime());
         emit valueChanged(uasId, "alt sim", "deg", alt*1e3, getUnixTime());
 
-        emit valueChanged(uasId, "vx sim", "m/s", vx*1e2, getUnixTime());
-        emit valueChanged(uasId, "vy sim", "m/s", vy*1e2, getUnixTime());
-        emit valueChanged(uasId, "vz sim", "m/s", vz*1e2, getUnixTime());
+        emit valueChanged(uasId, "vx sim", "m/s", vx, getUnixTime());
+        emit valueChanged(uasId, "vy sim", "m/s", vy, getUnixTime());
+        emit valueChanged(uasId, "vz sim", "m/s", vz, getUnixTime());
 
         emit valueChanged(uasId, "IAS sim", "m/s", ind_airspeed, getUnixTime());
         emit valueChanged(uasId, "TAS sim", "m/s", true_airspeed, getUnixTime());
+
+        emit valueChanged(uasId, "wind sp. sim", "m/s", wind_speed, getUnixTime());
+        emit valueChanged(uasId, "wind dir. sim", "deg", wind_dir, getUnixTime());
 }
 #endif
 
