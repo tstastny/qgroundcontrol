@@ -1274,9 +1274,9 @@ void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw
         emit valueChanged(uasId, "pitch rate sim", "rad/s", pitchspeed, getUnixTime());
         emit valueChanged(uasId, "yaw rate sim", "rad/s", yawspeed, getUnixTime());
 
-        emit valueChanged(uasId, "lat sim", "deg", lat*1e7, getUnixTime());
-        emit valueChanged(uasId, "lon sim", "deg", lon*1e7, getUnixTime());
-        emit valueChanged(uasId, "alt sim", "deg", alt*1e3, getUnixTime());
+        emit valueChanged(uasId, "lat sim", "deg", lat, getUnixTime());
+        emit valueChanged(uasId, "lon sim", "deg", lon, getUnixTime());
+        emit valueChanged(uasId, "alt sim", "deg", alt, getUnixTime());
 
         emit valueChanged(uasId, "vx sim", "m/s", vx, getUnixTime());
         emit valueChanged(uasId, "vy sim", "m/s", vy, getUnixTime());
@@ -1287,6 +1287,25 @@ void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw
 
         emit valueChanged(uasId, "wind sp. sim", "m/s", wind_speed, getUnixTime());
         emit valueChanged(uasId, "wind dir. sim", "deg", wind_dir, getUnixTime());
+
+        if (!_vehicle) {
+            return;
+        }
+
+        if (_vehicle->hilMode())
+        {
+            mavlink_message_t msg;
+            mavlink_msg_hil_ground_truth_pack_chan(mavlink->getSystemId(), mavlink->getComponentId(), _vehicle->priorityLink()->mavlinkChannel(),
+                                           &msg,
+                                               time_us, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, int32_t(lat*1e7), int32_t(lon*1e7), alt, vx, vy, vz, ind_airspeed, true_airspeed, wind_speed, wind_dir);
+            _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
+        }
+        else
+        {
+            // Attempt to set HIL mode
+            _vehicle->setHilMode(true);
+            qDebug() << __FILE__ << __LINE__ << "HIL is onboard not enabled, trying to enable.";
+        }
 }
 #endif
 
