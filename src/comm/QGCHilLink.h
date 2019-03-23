@@ -112,7 +112,9 @@ signals:
 
     void hilGroundTruthChanged(quint64 time_us, float roll, float pitch, float yaw, float rollspeed,
                               float pitchspeed, float yawspeed, double lat, double lon, double alt,
-                              float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float xacc, float yacc, float zacc);
+                              float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float wind_z,
+                              float angleofattack, float sideslip,
+                              float xacc, float yacc, float zacc);
 
     void sensorHilGpsChanged(quint64 time_us, double lat, double lon, double alt, int fix_type, float eph, float epv, float vel, float vn, float ve, float vd, float cog, int satellites);
 
@@ -125,6 +127,8 @@ signals:
 
     void sensorHilOpticalFlowChanged(quint64 time_us, qint16 flow_x, qint16 flow_y, float flow_comp_m_x,
                                      float flow_comp_m_y, quint8 quality, float ground_distance);
+
+    void sensorHilAirflowAnglesChanged(quint64 time_us, float true_airspeed, float angleofattack, float sideslip);
     
     /** @brief Remote host and port changed */
     void remoteChanged(const QString& hostPort);

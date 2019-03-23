@@ -116,6 +116,22 @@ public:
         temperature_var = var;
     }
 
+    void setAngleOfAttackVar(float var){
+        angleofattack_var = var;
+    }
+
+    void setSideslipVar(float var){
+        sideslip_var = var;
+    }
+
+    void setTauVaneUs(quint64 tau){
+        tau_vane_us = tau;
+    }
+
+    void setAirspEffVane(float sp){
+        airsp_eff_vane = sp;
+    }
+
 #ifndef __mobile__
     friend class FileManager;
 #endif
@@ -190,6 +206,12 @@ protected: //COMMENTS FOR TEST UNIT
     float diff_pressure_var;    ///< variance of differential pressure noise for HIL sim (hPa)
     float pressure_alt_var;     ///< variance of altitude pressure noise for HIL sim (hPa)
     float temperature_var;      ///< variance of temperature noise for HIL sim (C)
+    float angleofattack_var;    ///< variance of angle of attack noise for HIL sim (deg)
+    float sideslip_var;         ///< variance of sideslip noise for HIL sim (deg)
+
+    /// SIMULATION DYNAMICS
+    quint64 tau_vane_us;    ///< time constant of airflow vane response (us)
+    float airsp_eff_vane;   ///< airspeed at which vanes are effective (m/s)
 
     /// SIMULATION
 #ifndef __mobile__
@@ -231,11 +253,15 @@ public slots:
 
     void sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw, float rollRotationRate,
                         float pitchRotationRate, float yawRotationRate, double lat, double lon, double alt,
-                        float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float xacc, float yacc, float zacc);
+                        float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float wind_z,
+                            float angleofattack, float sideslip, float xacc, float yacc, float zacc);
 
     /** @brief RAW sensors for sensor HIL */
     void sendHilSensors(quint64 time_us, float xacc, float yacc, float zacc, float rollspeed, float pitchspeed, float yawspeed,
                         float xmag, float ymag, float zmag, float abs_pressure, float diff_pressure, float pressure_alt, float temperature, quint32 fields_changed);
+
+    /** @brief RAW airflow sensors for sensor HIL */
+    void sendHilAirflowAngles(quint64 time_us, float true_airspeed, float angleofattack, float sideslip);
 
     /** @brief Send Optical Flow sensor message for HIL, (arguments and units accoding to mavlink documentation*/
     void sendHilOpticalFlow(quint64 time_us, qint16 flow_x, qint16 flow_y, float flow_comp_m_x,

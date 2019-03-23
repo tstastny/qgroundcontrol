@@ -1222,6 +1222,10 @@ void UAS::enableHilXPlane(bool enable)
         diff_pressure_var = noise_scaler * 0.2604f;
         pressure_alt_var = noise_scaler * 0.5604f;
         temperature_var = noise_scaler * 0.7290f;
+        angleofattack_var = 0.3f; //deg
+        sideslip_var = 0.3f; //deg
+        tau_vane_us = 20000;
+        airsp_eff_vane = 5.0;
     }
     // Connect X-Plane Link
     if (enable)
@@ -1249,8 +1253,11 @@ void UAS::enableHilXPlane(bool enable)
 * @param vx Ground X Speed (Latitude), expressed as m/s
 * @param vy Ground Y Speed (Longitude), expressed as m/s
 * @param vz Ground Z Speed (Altitude), expressed as m/s
-* @param wind_speed Wind Speed (m/s)
+* @param wind_speed Wind Speed (m/s), horizontal component
 * @param wind_dir Wind Direction (deg), clockwise from north
+* @param wind_z Wind Z (m/s), down component
+* @param angleofattack Angle of attck (deg)
+* @param sideslip Sideslip angle (deg)
 * @param xacc X acceleration (mg)
 * @param yacc Y acceleration (mg)
 * @param zacc Z acceleration (mg)
@@ -1258,7 +1265,7 @@ void UAS::enableHilXPlane(bool enable)
 #ifndef __mobile__
 void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw, float rollspeed,
                        float pitchspeed, float yawspeed, double lat, double lon, double alt,
-                       float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float xacc, float yacc, float zacc)
+                       float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float wind_speed, float wind_dir, float wind_z, float angleofattack, float sideslip, float xacc, float yacc, float zacc)
 {
     Q_UNUSED(time_us);
     Q_UNUSED(xacc);
@@ -1287,6 +1294,10 @@ void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw
 
         emit valueChanged(uasId, "wind sp. sim", "m/s", wind_speed, getUnixTime());
         emit valueChanged(uasId, "wind dir. sim", "deg", wind_dir, getUnixTime());
+        emit valueChanged(uasId, "wind z sim", "m/s", wind_z, getUnixTime());
+
+        emit valueChanged(uasId, "aoa sim", "deg", angleofattack, getUnixTime());
+        emit valueChanged(uasId, "sideslip sim", "deg", sideslip, getUnixTime());
 
         if (!_vehicle) {
             return;
@@ -1297,7 +1308,10 @@ void UAS::sendHilGroundTruth(quint64 time_us, float roll, float pitch, float yaw
             mavlink_message_t msg;
             mavlink_msg_hil_ground_truth_pack_chan(mavlink->getSystemId(), mavlink->getComponentId(), _vehicle->priorityLink()->mavlinkChannel(),
                                            &msg,
-                                               time_us, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, int32_t(lat*1e7), int32_t(lon*1e7), alt, vx, vy, vz, ind_airspeed, true_airspeed, wind_speed, wind_dir);
+                                               time_us, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed,
+                                                   int32_t(lat*1e7), int32_t(lon*1e7), alt, vx, vy, vz,
+                                                   ind_airspeed, true_airspeed, wind_speed, wind_dir, wind_z,
+                                                   angleofattack, sideslip);
             _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
         }
         else
@@ -1445,6 +1459,84 @@ void UAS::sendHilSensors(quint64 time_us, float xacc, float yacc, float zacc, fl
                                          diff_pressure_corrupt, pressure_alt_corrupt, temperature_corrupt, fields_changed);
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
         lastSendTimeSensors = QGC::groundTimeMilliseconds();
+    }
+    else
+    {
+        // Attempt to set HIL mode
+        _vehicle->setHilMode(true);
+        qDebug() << __FILE__ << __LINE__ << "HIL is onboard not enabled, trying to enable.";
+    }
+}
+#endif
+
+#ifndef __mobile__
+void UAS::sendHilAirflowAngles(quint64 time_us, float true_airspeed, float angleofattack, float sideslip)
+{
+    if (!_vehicle) {
+        return;
+    }
+
+    if (_vehicle->hilMode())
+    {
+        // for now - considering airflow vanes as sensor type
+
+        static quint64 last_time_us = 0;
+        static float last_aoa = 0.0f;
+        static float last_slip = 0.0f;
+        static float last_aoa_vane = 0.0f;
+        static float last_slip_vane = 0.0f;
+
+        // time elapsed since last sim msg
+        quint64 ts = time_us - last_time_us;
+
+        // reset dynamics if we are not receiving msgs fast enough
+        if (ts > 300000) {
+            last_aoa = angleofattack;
+            last_slip = sideslip;
+            last_aoa_vane = angleofattack;
+            last_slip_vane = sideslip;
+            ts = 0;
+        }
+
+        // propagate vane dynamics
+        float aoa_vane = 0.0f;
+        float slip_vane = 0.0f;
+        if (ts > tau_vane_us) {
+            // feed through current value if simulation rate is lower than vane time constant
+            aoa_vane = last_aoa;
+            slip_vane = last_slip;
+        }
+        else {
+            // forward euler integration from last value
+            aoa_vane = last_aoa_vane + float(ts) * (last_aoa - last_aoa_vane) / float(tau_vane_us);
+            slip_vane = last_slip_vane + float(ts) * (last_slip - last_slip_vane) / float(tau_vane_us);
+        }
+        last_aoa_vane = aoa_vane;
+        last_slip_vane = slip_vane;
+
+        // vane is only effective above airspeed threshold
+        if (true_airspeed > airsp_eff_vane) {
+            last_aoa = angleofattack;
+            last_slip = sideslip;
+        }
+
+        // add noise
+        float angleofattack_corrupt = addZeroMeanNoise(aoa_vane, angleofattack_var);
+        float sideslip_corrupt = addZeroMeanNoise(slip_vane, sideslip_var);
+
+        // wrap angles .. just in case
+        if (angleofattack_corrupt > 180.0f) angleofattack_corrupt -= 360.0f;
+        if (angleofattack_corrupt < -180.0f) angleofattack_corrupt += 360.0f;
+        if (sideslip_corrupt > 180.0f) sideslip_corrupt -= 360.0f;
+        if (sideslip_corrupt < -180.0f) sideslip_corrupt += 360.0f;
+
+        mavlink_message_t msg;
+        mavlink_msg_hil_airflow_angles_pack_chan(mavlink->getSystemId(),
+                                         mavlink->getComponentId(),
+                                         _vehicle->priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         time_us, angleofattack_corrupt, sideslip_corrupt);
+        _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
     }
     else
     {

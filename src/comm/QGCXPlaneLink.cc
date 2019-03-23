@@ -195,6 +195,7 @@ void QGCXPlaneLink::run()
     connect(this, &QGCXPlaneLink::hilStateChanged, _vehicle->uas(), &UAS::sendHilState, Qt::QueuedConnection);
     connect(this, &QGCXPlaneLink::sensorHilGpsChanged, _vehicle->uas(), &UAS::sendHilGps, Qt::QueuedConnection);
     connect(this, &QGCXPlaneLink::sensorHilRawImuChanged, _vehicle->uas(), &UAS::sendHilSensors, Qt::QueuedConnection);
+    connect(this, &QGCXPlaneLink::sensorHilAirflowAnglesChanged, _vehicle->uas(), &UAS::sendHilAirflowAngles, Qt::QueuedConnection);
 
     _vehicle->uas()->startHil();
 
@@ -254,6 +255,7 @@ void QGCXPlaneLink::run()
     disconnect(this, &QGCXPlaneLink::hilStateChanged, _vehicle->uas(), &UAS::sendHilState);
     disconnect(this, &QGCXPlaneLink::sensorHilGpsChanged, _vehicle->uas(), &UAS::sendHilGps);
     disconnect(this, &QGCXPlaneLink::sensorHilRawImuChanged, _vehicle->uas(), &UAS::sendHilSensors);
+    disconnect(this, &QGCXPlaneLink::sensorHilAirflowAnglesChanged, _vehicle->uas(), &UAS::sendHilAirflowAngles);
     connectState = false;
 
     disconnect(socket, &QUdpSocket::readyRead, this, &QGCXPlaneLink::readBytes);
@@ -687,6 +689,20 @@ void QGCXPlaneLink::readBytes()
                 if (wind_dir > 360.0f) wind_dir = wind_dir - 360.0f;
                 if (wind_dir < 0.0f) wind_dir = wind_dir + 360.0f;
 
+                // x-plane doesnt output wind z.. only some random turbulence values.. need to calculate
+                float deg2rad = float(M_PI) / 180.0f;
+                float cosa = cosf(deg2rad * angleofattack);
+                float sina = sinf(deg2rad * angleofattack);
+                float cosb = cosf(deg2rad * sideslip);
+                float sinb = sinf(deg2rad * sideslip);
+                float u = true_airspeed * cosa * cosb;
+                float v = true_airspeed * sinb;
+                float w = true_airspeed * sina * cosb;
+                Eigen::Vector3f vb(u, v, w);
+                Eigen::Matrix3f R = euler_to_wRo(yaw, pitch, roll);
+                Eigen::Vector3f vi = R.transpose().eval() * vb;
+                wind_z = vz - vi[2];
+
                 //qDebug() << "Wind sp.:" << wind_speed << "m/s, Wind dir.:" << wind_dir << "deg";
             }
             // atmospheric pressure aircraft for XPlane 9 and 10
@@ -790,7 +806,11 @@ void QGCXPlaneLink::readBytes()
 
                 emitUpdate = true;
             }
-
+            else if (xPlaneVersion == 10 && p.index == 18)
+            {
+                angleofattack = p.f[0];
+                sideslip = p.f[1];
+            }
 //            else if (p.index == 19)
 //            {
 //                qDebug() << "ATT:" << p.f[0] << p.f[1] << p.f[2];
@@ -913,6 +933,8 @@ void QGCXPlaneLink::readBytes()
             int satellites = 8;
 
             emit sensorHilGpsChanged(QGC::groundTimeUsecs(), lat, lon, alt, gps_fix_type, eph, epv, vel, vx, vy, vz, cog, satellites);
+
+            emit sensorHilAirflowAnglesChanged(QGC::groundTimeUsecs(), true_airspeed, angleofattack, sideslip);
         } else {
             emit hilStateChanged(QGC::groundTimeUsecs(), roll, pitch, yaw, rollspeed,
                                  pitchspeed, yawspeed, lat, lon, alt,
@@ -923,7 +945,7 @@ void QGCXPlaneLink::readBytes()
         if (QGC::groundTimeMilliseconds() - simUpdateLastGroundTruth > 40) {
             emit hilGroundTruthChanged(QGC::groundTimeUsecs(), roll, pitch, yaw, rollspeed,
                                        pitchspeed, yawspeed, lat, lon, alt,
-                                       vx, vy, vz, ind_airspeed, true_airspeed, wind_speed, wind_dir, xacc, yacc, zacc);
+                                       vx, vy, vz, ind_airspeed, true_airspeed, wind_speed, wind_dir, wind_z, angleofattack, sideslip, xacc, yacc, zacc);
 
             simUpdateLastGroundTruth = QGC::groundTimeMilliseconds();
         }
