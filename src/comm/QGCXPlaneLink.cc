@@ -689,20 +689,6 @@ void QGCXPlaneLink::readBytes()
                 if (wind_dir > 360.0f) wind_dir = wind_dir - 360.0f;
                 if (wind_dir < 0.0f) wind_dir = wind_dir + 360.0f;
 
-                // x-plane doesnt output wind z.. only some random turbulence values.. need to calculate
-                float deg2rad = float(M_PI) / 180.0f;
-                float cosa = cosf(deg2rad * angleofattack);
-                float sina = sinf(deg2rad * angleofattack);
-                float cosb = cosf(deg2rad * sideslip);
-                float sinb = sinf(deg2rad * sideslip);
-                float u = true_airspeed * cosa * cosb;
-                float v = true_airspeed * sinb;
-                float w = true_airspeed * sina * cosb;
-                Eigen::Vector3f vb(u, v, w);
-                Eigen::Matrix3f R = euler_to_wRo(yaw, pitch, roll);
-                Eigen::Vector3f vi = R.transpose().eval() * vb;
-                wind_z = vz - vi[2];
-
                 //qDebug() << "Wind sp.:" << wind_speed << "m/s, Wind dir.:" << wind_dir << "deg";
             }
             // atmospheric pressure aircraft for XPlane 9 and 10
@@ -851,6 +837,22 @@ void QGCXPlaneLink::readBytes()
             {
                 //qDebug() << "UNKNOWN #" << p.index << p.f[0] << p.f[1] << p.f[2] << p.f[3];
             }
+
+            // calculate states not output from x-plane -- after defining the rest
+
+            // x-plane doesnt output wind z.. only some random turbulence values.. need to calculate
+            float deg2rad = float(M_PI) / 180.0f;
+            float cosa = cosf(deg2rad * angleofattack);
+            float sina = sinf(deg2rad * angleofattack);
+            float cosb = cosf(deg2rad * sideslip);
+            float sinb = sinf(deg2rad * sideslip);
+            float u_ = true_airspeed * cosa * cosb;
+            float v_ = true_airspeed * sinb;
+            float w_ = true_airspeed * sina * cosb;
+            Eigen::Vector3f vb(u_, v_, w_);
+            Eigen::Matrix3f R = euler_to_wRo(yaw, pitch, roll);
+            Eigen::Vector3f vi = R * vb;
+            wind_z = vz - vi[2];
         }
     }
     else if (data[0] == 'S' &&
