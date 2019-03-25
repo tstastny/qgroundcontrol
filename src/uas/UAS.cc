@@ -93,6 +93,10 @@ UAS::UAS(MAVLinkProtocol* protocol, Vehicle* vehicle, FirmwarePluginManager * fi
     diff_pressure_var(0.5802f),
     pressure_alt_var(0.5802f),
     temperature_var(0.7145f),
+    angleofattack_var(0.15f),
+    sideslip_var(0.15f),
+    tau_vane_us(20000),
+    airsp_eff_vane(5.0f),
     /*
     xacc_var(0.0f),
     yacc_var(0.0f),
@@ -1222,10 +1226,10 @@ void UAS::enableHilXPlane(bool enable)
         diff_pressure_var = noise_scaler * 0.2604f;
         pressure_alt_var = noise_scaler * 0.5604f;
         temperature_var = noise_scaler * 0.7290f;
-        angleofattack_var = 0.3f; //deg
-        sideslip_var = 0.3f; //deg
+        angleofattack_var = 0.15f; //deg
+        sideslip_var = 0.15f; //deg
         tau_vane_us = 20000;
-        airsp_eff_vane = 5.0;
+        airsp_eff_vane = 5.0f;
     }
     // Connect X-Plane Link
     if (enable)
