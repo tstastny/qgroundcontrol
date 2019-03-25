@@ -795,7 +795,8 @@ void QGCXPlaneLink::readBytes()
             else if (xPlaneVersion == 10 && p.index == 18)
             {
                 angleofattack = p.f[0];
-                sideslip = p.f[1];
+                // for whatever reason, x-plane defines sideslip with the wrong sign..
+                sideslip = -p.f[1];
             }
 //            else if (p.index == 19)
 //            {
