@@ -686,8 +686,12 @@ void QGCXPlaneLink::readBytes()
                 float knotsToMetersPerSecond = 0.514444f;
                 wind_speed = p.f[3] * knotsToMetersPerSecond;
                 wind_dir = p.f[4] + 180.0f;
+                // change convention (blowing *to, not *from)
                 if (wind_dir > 360.0f) wind_dir = wind_dir - 360.0f;
                 if (wind_dir < 0.0f) wind_dir = wind_dir + 360.0f;
+                // define between -180,180 deg
+                if (wind_dir > 180.0f) wind_dir = wind_dir - 360.0f;
+                if (wind_dir < -180.0f) wind_dir = wind_dir +360.0f;
 
                 //qDebug() << "Wind sp.:" << wind_speed << "m/s, Wind dir.:" << wind_dir << "deg";
             }
