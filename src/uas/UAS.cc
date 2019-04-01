@@ -93,8 +93,8 @@ UAS::UAS(MAVLinkProtocol* protocol, Vehicle* vehicle, FirmwarePluginManager * fi
     diff_pressure_var(0.5802f),
     pressure_alt_var(0.5802f),
     temperature_var(0.7145f),
-    angleofattack_var(0.15f),
-    sideslip_var(0.15f),
+    angleofattack_var(0.25f),
+    sideslip_var(0.25f),
     tau_vane_us(20000),
     airsp_eff_vane(5.0f),
     /*
